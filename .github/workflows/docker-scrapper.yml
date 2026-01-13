@@ -1,0 +1,25 @@
+name: Docker Trending Scraper
+on:
+  schedule:
+    - cron: "0 0 * * *"   # Runs daily at midnight UTC
+  workflow_dispatch:      
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Build Docker Image
+
+        run: |
+          docker build -t trending-scraper ./scrapers
+      - name: Run Scraper Container
+        env:
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          docker run \
+            -e ADMIN_SECRET="$ADMIN_SECRET" \
+            -e BACKEND_URL="$BACKEND_URL" \
+            trending-scraper
