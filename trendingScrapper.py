@@ -6,22 +6,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/91.0.4472.124 Safari/537.36"
+    )
+}
+
 def get_trending_repos(language="", since="daily"):
-    URL = "https://github.com/trending"
-    print(f"Scraping {language if language else 'all languages'} and from {since}")
+    url = "https://github.com/trending"
     if language:
-        URL += f"/{language}"
-    params = {"since": since}
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+        url += f"/{language}"
+
+    print(f"Scraping {language or 'all languages'} | {since}")
 
     try:
-        response = requests.get(URL, params=params, headers=headers)
+        response = requests.get(
+            url,
+            params={"since": since},
+            headers=HEADERS,
+            timeout=15
+        )
         response.raise_for_status()
-
     except Exception as e:
-        print(f"Failed to fetch Github page :{e}")
+        print("Failed to fetch GitHub page:", e)
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -29,58 +38,59 @@ def get_trending_repos(language="", since="daily"):
 
     for row in soup.find_all("article", class_="Box-row"):
         try:
-            title_tag = row.find("h2", class_="h3")
-            a_tag = title_tag.find("a")
-            title = a_tag.get_text(strip=True)
-            title = title.replace(" ", "")
-            parts = title.split("/")
-            
-            if len(parts) < 2:
+            # repo name
+            a_tag = row.select_one("h2 a")
+            if not a_tag:
                 continue
 
-            owner = parts[0]
-            repo_name = parts[1]
-
-            stats_div = row.find("div", class_="f6 color-fg-muted mt-2")
-            if not stats_div:
+            full_name = a_tag.get_text(strip=True).replace(" ", "")
+            if "/" not in full_name:
                 continue
-                
-            spans = stats_div.find_all("span")
-            if not spans:
-                stars_earned = 0
-            else:
-                raw_stars_earned = spans[-1].get_text(strip=True)
-                clean_num = re.sub(r'[^\d]', '', raw_stars_earned)
-                stars_earned = int(clean_num) if clean_num else 0
+
+            owner, repo_name = full_name.split("/", 1)
+
+            # stars earned
+            stars_earned = 0
+            stats = row.select("div.f6 span")
+
+            for span in stats:
+                text = span.get_text(strip=True).lower()
+                if "star" in text:
+                    num = re.sub(r"[^\d]", "", text)
+                    stars_earned = int(num) if num else 0
+                    break
 
             repos.append({
                 "owner": owner,
                 "repo": repo_name,
                 "stars_earned": stars_earned
             })
+
         except Exception as e:
-            print(f"Skipping row error: {e}")
-            continue
+            print("Skipping row:", e)
 
     return repos
+
 
 def push_trending_repos(repos, category):
     BACKEND_URL = os.getenv("BACKEND_URL")
     SECRET_KEY = os.getenv("ADMIN_SECRET")
-    
+
+    if not BACKEND_URL:
+        print("Error: BACKEND_URL not set")
+        return
+
     if not SECRET_KEY:
-        print("Error: ADMIN_SECRET environment variable not set.")
+        print("Error: ADMIN_SECRET not set")
         return
 
     if not repos:
-        print(f"No repos to send for {category}.")
+        print(f"No repos to send for {category}")
         return
-    
-    print(f"Sending {len(repos)} repos of category: {category}")
 
-    jsonData = {
+    payload = {
         "repoList": repos,
-        "category": category,
+        "category": category
     }
 
     headers = {
@@ -89,32 +99,28 @@ def push_trending_repos(repos, category):
     }
 
     try:
-        data = requests.post(BACKEND_URL, json=jsonData, headers=headers)
-        if data.status_code == 200:
-            print(f"Success: {category} processed.")
-            print("Response:", data.json())
+        res = requests.post(
+            BACKEND_URL,
+            json=payload,
+            headers=headers,
+            timeout=15
+        )
+
+        if res.status_code == 200:
+            print(f"{category} pushed successfully")
+            print("Response:", res.json())
         else:
-            print(f"Failed: {data.status_code} - {data.text}")
+            print(f"Failed ({res.status_code}):", res.text)
 
     except Exception as e:
-        print(f" Connection Error: {e}")
+        print("Connection error:", e)
 
 
 if __name__ == "__main__":
-    mode = os.getenv("SCRAPE_MODE","daily")
+    mode = os.getenv("SCRAPE_MODE", "daily").lower()
 
-    if mode == "daily":
-        data = get_trending_repos(since='daily')
-        push_trending_repos(data, category='daily')
-
-    elif mode == "weekly":
-        data = get_trending_repos(since='weekly')
-        push_trending_repos(data, category='weekly')
-
-    elif mode == "monthly":
-        data = get_trending_repos(since='monthly')
-        push_trending_repos(data, category='monthly')
-    
-    elif:
-        print("Invalid mode")
-    
+    if mode in {"daily", "weekly", "monthly"}:
+        data = get_trending_repos(since=mode)
+        push_trending_repos(data, category=mode)
+    else:
+        print("Invalid SCRAPE_MODE:", mode)

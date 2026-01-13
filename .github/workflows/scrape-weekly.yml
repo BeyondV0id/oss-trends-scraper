@@ -1,0 +1,29 @@
+name: Trending Scraper (Weekly)
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"   # every Sunday
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    env:
+      SCRAPE_MODE: weekly
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t trending-scraper ./scrapers
+
+      - name: Run scraper
+        env:
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          docker run \
+            -e ADMIN_SECRET \
+            -e BACKEND_URL \
+            -e SCRAPE_MODE \
+            trending-scraper
