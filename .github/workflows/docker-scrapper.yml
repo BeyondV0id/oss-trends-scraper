@@ -2,6 +2,8 @@ name: Docker Trending Scraper
 on:
   schedule:
     - cron: "0 0 * * *"   # Runs daily at midnight UTC
+    - cron: "0 0 * * 0"
+    - cron: "0 0 1 * *"
   workflow_dispatch:      
 jobs:
   scrape:
@@ -10,16 +12,31 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Build Docker Image
 
+      - name: Build Docker Image
         run: |
           docker build -t trending-scraper ./scrapers
+
+      - name: Set SCRAPE_MODE
+        run: |
+          if [["${{github.event.schedule}}" =="0 0 * * *"]]; then
+            echo "SCRAPE_MODE=daily" >> $GITHUB_ENV
+          elif [["${{github.event.schedule}}" =="0 0 * * 0"]]; then
+            echo "SCRAPE_MODE=weekly" >> $GITHUB_ENV
+          elif [["${{github.event.schedule}}" =="0 0 1 * *"]]; then
+            echo "SCRAPE_MODE=monthly" >> $GITHUB_ENV
+          else
+            echo "SCRAPE_MODE=unknown" >> $GITHUB_ENV
+          fi
+
+
       - name: Run Scraper Container
         env:
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
           docker run \
-            -e ADMIN_SECRET="$ADMIN_SECRET" \
-            -e BACKEND_URL="$BACKEND_URL" \
+            -e ADMIN_SECRET \
+            -e BACKEND_URL \
+            -e SCRAPE_MODE \
             trending-scraper

@@ -101,15 +101,20 @@ def push_trending_repos(repos, category):
 
 
 if __name__ == "__main__":
+    mode = os.getenv("SCRAPE_MODE","daily")
+
+    if mode == "daily":
+        data = get_trending_repos(since='daily')
+        push_trending_repos(data, category='daily')
+
+    elif mode == "weekly":
+        data = get_trending_repos(since='weekly')
+        push_trending_repos(data, category='weekly')
+
+    elif mode == "monthly":
+        data = get_trending_repos(since='monthly')
+        push_trending_repos(data, category='monthly')
     
-    print("--- [Daily] ---")
-    daily_data = get_trending_repos(since='daily')
-    push_trending_repos(daily_data, category='daily')
-
-    print("\n--- [Weekly] ---")
-    weekly_data = get_trending_repos(since='weekly')
-    push_trending_repos(weekly_data, category='weekly')
-
-    print("\n--- [Monthly] ---")
-    monthly_data = get_trending_repos(since='monthly')
-    push_trending_repos(monthly_data, category='monthly')
+    elif:
+        print("Invalid mode")
+    
