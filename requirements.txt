@@ -1,6 +1,25 @@
-requests
+# ── Web framework ──
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
 
-beautifulsoup4
+# ── Database ──
+sqlalchemy[asyncio]==2.0.35
+psycopg[binary]>=3.2.2
+greenlet==3.1.0
 
-python-dotenv
+# ── Scraping ──
+beautifulsoup4==4.12.3
+httpx==0.27.2
+
+# ── Scheduling ──
+apscheduler==3.10.4
+
+# ── Config ──
+python-dotenv==1.0.1
+
+# ── Migrations ──
+alembic>=1.18.0
+
+# ── Validation (comes with FastAPI but pinned) ──
+pydantic==2.9.0
 

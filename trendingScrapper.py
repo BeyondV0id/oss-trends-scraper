@@ -38,33 +38,54 @@ def get_trending_repos(language="", since="daily"):
 
     for row in soup.find_all("article", class_="Box-row"):
         try:
-            # repo name
-            a_tag = row.select_one("h2 a")
+            # Find the h2 with class "h3 lh-condensed"
+            h2_tag = row.find("h2", class_="h3")
+            if not h2_tag:
+                continue
+            
+            # Find the link inside h2
+            a_tag = h2_tag.find("a")
             if not a_tag:
                 continue
 
-            full_name = a_tag.get_text(strip=True).replace(" ", "")
-            if "/" not in full_name:
+            # Get href which contains /owner/repo
+            href = a_tag.get("href", "")
+            if not href or href.count("/") < 2:
                 continue
+            
+            # Parse owner and repo from href (format: /owner/repo)
+            parts = href.strip("/").split("/")
+            if len(parts) < 2:
+                continue
+            
+            owner = parts[0]
+            repo_name = parts[1]
 
-            owner, repo_name = full_name.split("/", 1)
-
-            # stars earned
+            # Find stars earned - look for span with "stars today" or similar text
             stars_earned = 0
-            stats = row.select("div.f6 span")
-
-            for span in stats:
-                text = span.get_text(strip=True).lower()
-                if "star" in text:
-                    num = re.sub(r"[^\d]", "", text)
-                    stars_earned = int(num) if num else 0
-                    break
+            
+            # Try to find the stats section - usually in a div after h2
+            stats_section = row.find("div", class_="f6")
+            if stats_section:
+                spans = stats_section.find_all("span")
+                for span in spans:
+                    text = span.get_text(strip=True).lower()
+                    # Look for pattern like "123 stars today" or "1,234 stars this week"
+                    if "star" in text:
+                        # Extract numbers from text like "123 stars today"
+                        match = re.search(r'([\d,]+)\s*star', text)
+                        if match:
+                            num_str = match.group(1).replace(",", "")
+                            stars_earned = int(num_str) if num_str.isdigit() else 0
+                            break
 
             repos.append({
                 "owner": owner,
                 "repo": repo_name,
                 "stars_earned": stars_earned
             })
+            
+            print(f"Found: {owner}/{repo_name} ({stars_earned} stars)")
 
         except Exception as e:
             print("Skipping row:", e)
