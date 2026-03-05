@@ -26,6 +26,6 @@ COPY --from=base /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.
 COPY --from=base /usr/local/bin /usr/local/bin
 COPY --from=base /app /app
 
-EXPOSE 8001
+EXPOSE 8080
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
