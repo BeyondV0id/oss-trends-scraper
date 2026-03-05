@@ -19,7 +19,7 @@ class Repo(Base):
     __tablename__ = "repos"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    github_id = Column(Integer, nullable=False, unique=True)
+    github_id = Column(Integer, nullable=True, unique=True)
     owner = Column(String(256), nullable=False)
     repo_name = Column(String(256), nullable=False)
     full_name = Column(String(256), nullable=False, unique=True, index=True)

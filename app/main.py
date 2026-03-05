@@ -1,11 +1,17 @@
 import logging
+import sys
 from contextlib import asynccontextmanager
+
+# Fix for Windows: psycopg v3 async requires SelectorEventLoop, not ProactorEventLoop
+if sys.platform == "win32":
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from fastapi import FastAPI
 
 from app.database import init_db, close_db
 from app.routes import router
-from app.scheduler import start_scheduler, stop_scheduler, scheduled_scrape
+from app.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,13 +25,7 @@ async def lifespan(app: FastAPI):
     # ── Startup ──
     logger.info("Starting Trending Scraper microservice...")
     await init_db()
-    logger.info("Database tables created / verified.")
-
-    # Run an initial scrape on startup
-    try:
-        await scheduled_scrape()
-    except Exception as exc:
-        logger.error("Initial scrape failed: %s", exc)
+    logger.info("Database connected.")
 
     start_scheduler()
 
@@ -60,4 +60,10 @@ if __name__ == "__main__":
     import uvicorn
     from app.config import settings
 
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    uvicorn.run(
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=True,
+        loop="asyncio",
+    )

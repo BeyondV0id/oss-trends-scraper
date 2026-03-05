@@ -49,8 +49,6 @@ async def get_trending(
             language=row.repo.language,
             stargazers_count=row.repo.stargazers_count,
             forks_count=row.repo.forks_count,
-            watchers_count=row.repo.watchers_count,
-            open_issues_count=row.repo.open_issues_count,
             stars_earned=row.stars_earned,
             period=row.period,
         ))

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 # ---------- Repo ----------
 class RepoBase(BaseModel):
-    github_id: int
+    github_id: int | None = None
     owner: str
     repo_name: str
     full_name: str
@@ -42,7 +42,7 @@ class TrendingRepoOut(BaseModel):
 class TrendingRepoSimple(BaseModel):
     """Flattened response: repo info + stars_earned."""
     id: int
-    github_id: int
+    github_id: int | None = None
     owner: str
     repo_name: str
     full_name: str
@@ -51,8 +51,6 @@ class TrendingRepoSimple(BaseModel):
     language: str | None = None
     stargazers_count: int = 0
     forks_count: int = 0
-    watchers_count: int = 0
-    open_issues_count: int = 0
     stars_earned: int = 0
     period: str
 

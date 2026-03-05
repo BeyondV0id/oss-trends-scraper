@@ -14,8 +14,8 @@ scheduler = AsyncIOScheduler()
 async def scheduled_scrape():
     """Run scrapes for all periods."""
     logger.info("Scheduled scrape starting...")
-    async with AsyncSessionLocal() as session:
-        for period in ["daily", "weekly", "monthly"]:
+    for period in ["daily", "weekly", "monthly"]:
+        async with AsyncSessionLocal() as session:
             try:
                 result = await scrape_and_store(session, period=period)
                 logger.info("Scheduled scrape [%s]: %s", period, result)
