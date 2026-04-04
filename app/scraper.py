@@ -21,11 +21,7 @@ HEADERS = {
 }
 
 
-# ─────────────────── Helpers ───────────────────
-
-
 def _parse_count(text: str) -> int:
-    """Parse number strings like '1,234' into an int."""
     text = text.strip().replace(",", "")
     try:
         return int(text)
@@ -33,11 +29,7 @@ def _parse_count(text: str) -> int:
         return 0
 
 
-# ─────────────────── Scraping ───────────────────
-
-
 def scrape_trending_page(language: str = "", since: str = "daily") -> list[dict]:
-    """Scrape the GitHub trending page — extracts all metadata from HTML."""
     url = "https://github.com/trending"
     if language:
         url += f"/{language}"
@@ -56,7 +48,6 @@ def scrape_trending_page(language: str = "", since: str = "daily") -> list[dict]
 
     for row in soup.find_all("article", class_="Box-row"):
         try:
-            # ── repo name ──
             h2_tag = row.find("h2", class_="h3")
             if not h2_tag:
                 continue
@@ -75,15 +66,12 @@ def scrape_trending_page(language: str = "", since: str = "daily") -> list[dict]
             owner, repo_name = parts[0], parts[1]
             full_name = f"{owner}/{repo_name}"
 
-            # ── description ──
             desc_tag = row.find("p")
             description = desc_tag.get_text(strip=True) if desc_tag else None
 
-            # ── language ──
             lang_span = row.find("span", itemprop="programmingLanguage")
             language_name = lang_span.get_text(strip=True) if lang_span else None
 
-            # ── total stars, forks, stars earned ──
             total_stars = 0
             forks = 0
             stars_earned = 0
@@ -98,7 +86,6 @@ def scrape_trending_page(language: str = "", since: str = "daily") -> list[dict]
                     elif "/forks" in href_attr or "/network" in href_attr:
                         forks = _parse_count(num_text)
 
-                # stars earned in period
                 for span in stats_div.find_all("span"):
                     text = span.get_text(strip=True).lower()
                     if "star" in text and ("today" in text or "this week" in text or "this month" in text):
@@ -125,11 +112,7 @@ def scrape_trending_page(language: str = "", since: str = "daily") -> list[dict]
     return repos
 
 
-# ─────────────────── DB operations ───────────────────
-
-
 async def upsert_repo(session: AsyncSession, data: dict) -> int:
-    """Insert or update a repo (by full_name) and return its id."""
     stmt = pg_insert(Repo).values(
         owner=data["owner"],
         repo_name=data["repo_name"],
@@ -159,7 +142,6 @@ async def upsert_repo(session: AsyncSession, data: dict) -> int:
 
 
 async def upsert_trending(session: AsyncSession, repo_id: int, period: str, stars_earned: int):
-    """Insert or update a trending entry."""
     stmt = pg_insert(TrendingRepo).values(
         repo_id=repo_id,
         period=period,
@@ -176,24 +158,15 @@ async def upsert_trending(session: AsyncSession, repo_id: int, period: str, star
 
 
 async def clear_trending(session: AsyncSession, period: str):
-    """Remove all trending entries for a given period."""
     await session.execute(delete(TrendingRepo).where(TrendingRepo.period == period))
 
 
-# ─────────────────── Main orchestrator ───────────────────
-
-
 async def scrape_and_store(session: AsyncSession, period: str = "daily", language: str = "") -> dict:
-    """
-    Full pipeline: scrape trending page → store in DB.
-    All data comes from the HTML page — no GitHub API needed.
-    """
     scraped_repos = scrape_trending_page(language=language, since=period)
 
     if not scraped_repos:
         return {"scraped": 0, "errors": 0, "message": "No repos scraped"}
 
-    # Clear old entries for this period before inserting fresh data
     await clear_trending(session, period)
 
     synced = 0
@@ -201,7 +174,7 @@ async def scrape_and_store(session: AsyncSession, period: str = "daily", languag
 
     for item in scraped_repos:
         try:
-            async with session.begin_nested():  # SAVEPOINT per repo
+            async with session.begin_nested():
                 repo_id = await upsert_repo(session, item)
                 await upsert_trending(session, repo_id, period, item["stars_earned"])
             synced += 1
