@@ -12,7 +12,7 @@ def _normalize_db_url(url: str) -> str:
 
 class Settings:
     def __init__(self) -> None:
-        raw_url = os.environ.get("DATABASE_URL")
+        raw_url = os.environ.get("DATABASE_URL", "").strip()
         if not raw_url:
             raise RuntimeError("DATABASE_URL environment variable is not set")
         self.DATABASE_URL: str = _normalize_db_url(raw_url)

@@ -36,7 +36,7 @@ async def main() -> None:
         sys.exit(1)
 
     # Validate DB is reachable before doing any work
-    database_url = os.environ.get("DATABASE_URL", "")
+    database_url = os.environ.get("DATABASE_URL", "").strip()
     if not database_url:
         logger.error("DATABASE_URL is not set. Aborting.")
         sys.exit(1)
