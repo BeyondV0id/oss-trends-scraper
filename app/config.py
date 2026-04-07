@@ -4,29 +4,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _normalize_db_url(url: str) -> str:
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
 class Settings:
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://postgres:password@localhost:5432/trending_db",
-    )
-    # Convert standard postgres:// URL to psycopg async format if needed
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    def __init__(self) -> None:
+        raw_url = os.environ.get("DATABASE_URL")
+        if not raw_url:
+            raise RuntimeError("DATABASE_URL environment variable is not set")
+        self.DATABASE_URL: str = _normalize_db_url(raw_url)
+        self.DATABASE_URL_SYNC: str = self.DATABASE_URL
 
-    # Sync URL for Alembic migrations (psycopg v3 sync mode)
-    DATABASE_URL_SYNC: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://postgres:password@localhost:5432/trending_db",
-    )
-    # Ensure it uses psycopg v3 dialect (not psycopg2)
-    if DATABASE_URL_SYNC.startswith("postgresql://"):
-        DATABASE_URL_SYNC = DATABASE_URL_SYNC.replace("postgresql://", "postgresql+psycopg://", 1)
-
-    GITHUB_TOKEN: str | None = os.getenv("GITHUB_TOKEN", None)
-    ADMIN_SECRET: str = os.getenv("ADMIN_SECRET", "change-me")
-    SCRAPE_INTERVAL_MINUTES: int = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "360"))  # 6 hours
-    PORT: int = int(os.getenv("PORT", "8001"))
-    HOST: str = os.getenv("HOST", "0.0.0.0")
+        self.GITHUB_TOKEN: str | None = os.environ.get("GITHUB_TOKEN")
+        self.ADMIN_SECRET: str = os.environ.get("ADMIN_SECRET", "change-me")
+        self.SCRAPE_INTERVAL_MINUTES: int = int(os.environ.get("SCRAPE_INTERVAL_MINUTES", "360"))
+        self.PORT: int = int(os.environ.get("PORT", "8001"))
+        self.HOST: str = os.environ.get("HOST", "0.0.0.0")
 
 
 settings = Settings()

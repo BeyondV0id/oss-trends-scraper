@@ -2,7 +2,7 @@ name: Trending Scraper (Monthly)
 
 on:
   schedule:
-    - cron: "0 0 1 * *"   # first day of month
+    - cron: "0 0 1 * *"   # first day of month at 00:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -19,11 +19,12 @@ jobs:
 
       - name: Run scraper
         env:
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          DATABASE_URL: ${{ secrets.SCRAPER_DATABASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker run \
-            -e ADMIN_SECRET \
-            -e BACKEND_URL \
+          docker run --rm \
+            -e DATABASE_URL \
+            -e GITHUB_TOKEN \
             -e SCRAPE_MODE \
-            trending-scraper
+            trending-scraper \
+            python run_scrape.py
