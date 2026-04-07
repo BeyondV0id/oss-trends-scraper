@@ -2,7 +2,6 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-# Fix for Windows: psycopg v3 async requires SelectorEventLoop, not ProactorEventLoop
 if sys.platform == "win32":
     import asyncio
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Startup ──
     logger.info("Starting Trending Scraper microservice...")
     await init_db()
     logger.info("Database connected.")
@@ -31,7 +29,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # ── Shutdown ──
     stop_scheduler()
     await close_db()
     logger.info("Trending Scraper microservice stopped.")
@@ -39,7 +36,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SourceSurf Trending Scraper",
-    description="Microservice that scrapes GitHub trending repos, stores them in PostgreSQL, and exposes a REST API.",
+    description="Microservice that scrapes GitHub trending repos and exposes a REST API.",
     version="1.0.0",
     lifespan=lifespan,
 )

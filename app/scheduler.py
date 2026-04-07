@@ -12,7 +12,6 @@ scheduler = AsyncIOScheduler()
 
 
 async def scheduled_scrape():
-    """Run scrapes for all periods."""
     logger.info("Scheduled scrape starting...")
     for period in ["daily", "weekly", "monthly"]:
         async with AsyncSessionLocal() as session:
@@ -25,7 +24,6 @@ async def scheduled_scrape():
 
 
 def start_scheduler():
-    """Register the scrape job and start the scheduler."""
     scheduler.add_job(
         scheduled_scrape,
         trigger=IntervalTrigger(minutes=settings.SCRAPE_INTERVAL_MINUTES),
@@ -34,12 +32,9 @@ def start_scheduler():
         replace_existing=True,
     )
     scheduler.start()
-    logger.info(
-        "Scheduler started — scraping every %d minutes", settings.SCRAPE_INTERVAL_MINUTES
-    )
+    logger.info("Scheduler started — scraping every %d minutes", settings.SCRAPE_INTERVAL_MINUTES)
 
 
 def stop_scheduler():
-    """Shut down the scheduler gracefully."""
     scheduler.shutdown(wait=False)
     logger.info("Scheduler stopped.")

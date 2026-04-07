@@ -5,26 +5,19 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
-
-# Import all models so Base.metadata is populated
 from app.models import Repo, TrendingRepo  # noqa: F401
 
-# Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url from our Settings
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
 
-# Set up Python logging from the config file
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# MetaData for 'autogenerate' support
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode — emits SQL to stdout."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -37,7 +30,6 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode — connects to DB directly."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
